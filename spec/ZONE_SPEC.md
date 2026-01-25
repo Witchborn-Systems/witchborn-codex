@@ -126,6 +126,13 @@ Explicit Porting: If the registrar's cxbind server is hosted on a non-standard p
 
 Registrar Responsibility: Registrars are responsible for ensuring their infrastructure is reachable on the port specified in their registered BIND record.
 
+### 2.2.2 Path-Based Resolution (New)
+Records MAY include a `path` field to support sub-apps or specific service endpoints within a single identity.
+
+* **`path`**: A string representing the sub-resource (e.g., `/chatgpt`).
+* **Default**: If omitted, the path MUST be treated as `/` (the root of the identity).
+* **Selection**: When resolving `ai://identity/subpath`, the resolver MUST match the requested subpath against this field.
+
 ## 3. Zone File Authority
 
 * Canonical zone for an identity is the file at `zones/<identity>.json`, with identity normalized per the spec (authority/registrar hints always stripped).

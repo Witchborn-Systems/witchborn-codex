@@ -81,15 +81,17 @@ Optional associated records:
 
 ### 5.2 MCP Mode
 
-Activated by a request to a dedicated MCP resolution endpoint (e.g. `/codex/resolve/mcp/{identity}`). In this mode, Codex Bind MUST:
+Activated by a request to a dedicated MCP resolution endpoint (e.g., `/codex/resolve/mcp/{identity}/{subpath}`). In this mode, Codex Bind MUST:
 
-1. Identify all MCP records for the identity.
-2. Sort by ascending priority.
-3. Apply CAPS filtering.
-4. Apply CASCADE inheritance.
-5. Select exactly ONE MCP endpoint.
-6. Emit a collapsed MCP descriptor.
-
+1.  **Identify all MCP records** for the identity, including those gathered via `CASCADE` inheritance.
+2.  **Apply Path Filtering**:
+    * The resolver MUST search for an MCP record where the `path` attribute exactly matches the requested `{subpath}`.
+    * If no exact match is found, the resolver MUST fall back to the record where `path` is defined as `"/"` (the Authority Root).
+    * If no records exist for either the specific path or the root path, resolution MUST fail with a `404 Not Found` error.
+3.  **Sort by ascending priority**: Lower priority values have higher precedence; the default priority is `10` if not specified.
+4.  **Apply CAPS filtering**: If `CAPS` records are present, only endpoints intersecting with the requested capability set remain eligible.
+5.  **Select exactly ONE MCP endpoint** based on the highest remaining priority after filtering.
+6.  **Emit a collapsed MCP descriptor**: Return the final synthesized JSON object to the client.
 ---
 
 ## 6. CAPS Filtering

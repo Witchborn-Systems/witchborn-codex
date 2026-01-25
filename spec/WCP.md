@@ -256,6 +256,14 @@ Non-Standard Ports: Resolution is protocol-agnostic regarding port assignments. 
 Fallback: If no port is specified in a BIND URI, the client MUST assume the standard HTTPS port (443).
 
 ---
+
+### 8.4 Federated Delegation (BIND)
+An identity zone MAY delegate authoritative resolution to an external server using a `BIND` record.
+
+* **Behavior**: If the primary resolver encounters a `BIND` record pointing to a URI other than its own, it MUST notify the client that the identity is **DELEGATED**.
+* **Client Action**: The client SHOULD then repeat the resolution request against the delegated URI provided in the `BIND` record.
+
+---
 ## 9. Write Authority
 
 * Codex Bind is **read-mostly**

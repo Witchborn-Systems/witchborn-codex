@@ -17,7 +17,7 @@ WWW_ROOT = APP_ROOT / "www"
 
 app = FastAPI(
     title="Witchborn Codex API",
-    version="1.0.0-genesis",
+    version="1.1.0-genesis",
     description=(
         "Public, nonprofit reference implementation of the Witchborn Codex.\n\n"
         "This API provides identity resolution and registry services for "
@@ -60,18 +60,14 @@ GENESIS_PROTECTED = {
 # MODELS
 # ============================================================
 
-RecordType = Literal["APP", "MCP", "KEY", "TXT", "CAPS", "CASCADE"]
+RecordType = Literal["APP", "MCP", "KEY", "TXT", "CAPS", "CASCADE", "BIND"]
 
 
 class Record(BaseModel):
-    type: RecordType = Field(..., description="APP, MCP, KEY, TXT, CAPS, CASCADE")
+    type: RecordType = Field(..., description="APP, MCP, KEY, TXT, CAPS, CASCADE, BIND")
     value: Any
     priority: int = 10
-
-
-class ClaimRequest(BaseModel):
-    identity: str = Field(..., description="Canonical identity name (no ai://)")
-    records: List[Record]
+    path: str = Field("/", description="The sub-resource path for this record")
 
 
 # ============================================================
@@ -98,12 +94,6 @@ def load_zone(identity: str) -> Dict[str, Any] | None:
         with open(path, "r", encoding="utf-8") as f:
             return json.load(f)
     return None
-
-
-def save_zone(identity: str, data: Dict[str, Any]) -> None:
-    path = zone_path(identity)
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2)
 
 
 def records_by_type(records: List[Dict[str, Any]], rtype: str) -> List[Dict[str, Any]]:
@@ -139,7 +129,6 @@ def resolve_cascade(
             resolve_cascade(upstream, seen, depth + 1, max_depth)
         )
 
-    # Upstream first, local later (local overrides by priority)
     return inherited + records
 
 
@@ -170,6 +159,19 @@ def resolve(identity: str = Query(..., description="ai:// identity to resolve"))
 
     zone = load_zone(name)
     if zone:
+        # Federation/Delegation Check (WCP 8.4)
+        bind_records = records_by_type(zone['records'], "BIND")
+        for b in bind_records:
+            bind_url = b.get("value", "")
+            # If BIND points away from our server, signal delegation
+            if "witchbornsystems.ai" not in bind_url:
+                return {
+                    "identity": f"ai://{name}",
+                    "status": "DELEGATED",
+                    "authoritative_server": bind_url,
+                    "message": "This identity is managed by an external authority."
+                }
+
         return {
             "identity": f"ai://{name}",
             "status": "LIVE",
@@ -182,51 +184,46 @@ def resolve(identity: str = Query(..., description="ai:// identity to resolve"))
 
 
 @app.get("/codex/resolve/mcp/{identity}")
-def resolve_mcp(identity: str):
+@app.get("/codex/resolve/mcp/{identity}/{subpath:path}")
+def resolve_mcp(identity: str, subpath: str = ""):
+    """
+    MCP Collapse with Path Awareness (MCP_COLLAPSE 5.2).
+    """
     name = normalize_identity(identity)
+    target_path = "/" + subpath.strip("/")
 
     if name in GENESIS_PROTECTED:
         raise HTTPException(status_code=403, detail="Identity is protected.")
 
-    zone = load_zone(name)
-    if not zone:
-        raise HTTPException(status_code=404, detail="Identity not forged.")
-
     all_records = resolve_cascade(name, seen=set())
 
+    # 1. Gather and Filter by Path
     mcp_records = records_by_type(all_records, "MCP")
     if not mcp_records:
         raise HTTPException(status_code=404, detail="No MCP records found.")
 
-    # Lower priority value wins
-    mcp_records.sort(key=lambda r: r.get("priority", 10))
+    # 2. Match exact path, fallback to "/"
+    selected_record = next((r for r in mcp_records if r.get("path") == target_path), None)
+    if not selected_record:
+        selected_record = next((r for r in mcp_records if r.get("path", "/") == "/"), None)
 
+    if not selected_record:
+        raise HTTPException(status_code=404, detail=f"No endpoint found for path {target_path}")
+
+    # 3. Sort by priority
+    # Note: Using only path-filtered records for priority tie-breaking
+    eligible_matches = [r for r in mcp_records if r.get("path", "/") == selected_record.get("path", "/")]
+    eligible_matches.sort(key=lambda r: r.get("priority", 10))
+    selected = eligible_matches[0]
+
+    # 4. Handle CAPS Filtering
     caps_records = records_by_type(all_records, "CAPS")
-    key_records = records_by_type(all_records, "KEY")
-
     allowed_caps: Set[str] = set()
     if caps_records:
         for c in caps_records:
             val = c.get("value")
             if isinstance(val, list):
                 allowed_caps.update(str(v) for v in val)
-
-        if allowed_caps:
-            filtered = []
-            for m in mcp_records:
-                m_caps = m.get("capabilities")
-                if not m_caps or set(m_caps) & allowed_caps:
-                    filtered.append(m)
-
-            if not filtered:
-                raise HTTPException(
-                    status_code=403,
-                    detail="CAPS constraints unsatisfied.",
-                )
-
-            mcp_records = filtered
-
-    selected = mcp_records[0]
 
     response: Dict[str, Any] = {
         "identity": f"ai://{name}",
@@ -239,34 +236,11 @@ def resolve_mcp(identity: str):
     if allowed_caps:
         response["capabilities"] = sorted(allowed_caps)
 
+    key_records = records_by_type(all_records, "KEY")
     if key_records:
         response["key"] = key_records[0].get("value")
 
     return response
-
-
-@app.post("/codex/claim")
-def claim(req: ClaimRequest):
-    name = normalize_identity(req.identity)
-
-    if name in GENESIS_PROTECTED:
-        raise HTTPException(status_code=403, detail="Identity is protected.")
-
-    if load_zone(name):
-        raise HTTPException(status_code=409, detail="Identity already claimed.")
-
-    zone = {
-        "identity": name,
-        "created_at": datetime.utcnow().isoformat() + "Z",
-        "records": [r.model_dump() for r in req.records],
-    }
-
-    save_zone(name, zone)
-
-    return {
-        "status": "SUCCESS",
-        "message": f"ai://{name} is now active.",
-    }
 
 
 def _static_file(path: Path) -> FileResponse:
