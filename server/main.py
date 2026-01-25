@@ -16,7 +16,24 @@ from fastapi.responses import FileResponse
 APP_ROOT = Path(__file__).resolve().parents[1]
 WWW_ROOT = APP_ROOT / "www"
 
-app = FastAPI()
+app = FastAPI(
+    title="Codex Bind",
+    version="1.0.0-genesis",
+    description=(
+        "Authoritative public resolution service for the Witchborn Codex.\n\n"
+        "Codex Bind resolves identities and collapses records according to "
+        "the Witchborn Codex Protocol (WCP)."
+    ),
+    terms_of_service="https://witchbornsystems.ai/governance",
+    contact={
+        "name": "Witchborn Systems",
+        "url": "https://witchbornsystems.ai",
+    },
+    license_info={
+        "name": "ForgeBorn License v1.0.1",
+        "url": "https://github.com/WitchbornSystems/witchborn-codex/blob/main/LICENSE",
+    },
+)
 
 
 def _static_file(path: Path) -> FileResponse:
