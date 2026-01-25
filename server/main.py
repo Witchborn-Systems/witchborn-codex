@@ -1,17 +1,14 @@
-from pathlib import Path
-
-from fastapi import FastAPI, HTTPException, Query
-from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field
-from typing import List, Dict, Any
-import os
 import json
+import os
 from datetime import datetime
-
 from pathlib import Path
+from typing import List, Dict, Any
 
 from fastapi import FastAPI, HTTPException
+from fastapi import Query
 from fastapi.responses import FileResponse
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel, Field
 
 APP_ROOT = Path(__file__).resolve().parents[1]
 WWW_ROOT = APP_ROOT / "www"
@@ -25,14 +22,14 @@ app = FastAPI(
         "autonomous AI systems.\n\n"
         "This service does NOT host AI models, proxy traffic, or execute MCP calls."
     ),
-    terms_of_service="https://www.witchbornsystems.org/governance",
+    terms_of_service="https://witchbornsystems.ai/governance",
     contact={
         "name": "Witchborn Systems",
-        "url": "https://www.witchbornsystems.org/",
+        "url": "https://witchbornsystems.ai",
     },
     license_info={
         "name": "ForgeBorn License v1.0.1",
-        "url": "https://www.witchbornsystems.org/license",
+        "url": "https://github.com/WitchbornSystems/witchborn-codex/blob/main/LICENSE"
     },
 )
 
