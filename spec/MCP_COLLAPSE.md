@@ -2,17 +2,16 @@
 
 Witchborn Codex Bind — Normative Specification
 
-## Status
+**Status:** Public, normative (Frozen)
+**Scope:** Public, authoritative
 
-Public, normative.
+---
 
 ## Scope
 
-This document defines how the Codex Bind server resolves and collapses
-MCP (Model Context Protocol) records for agent consumers.
+This document defines how the Codex Bind server resolves and collapses MCP (Model Context Protocol) records for agent consumers.
 
-This document does NOT define MCP execution, transport framing,
-authentication, or session lifecycle.
+This document does **NOT** define MCP execution, transport framing, authentication, or session lifecycle.
 
 ---
 
@@ -20,87 +19,95 @@ authentication, or session lifecycle.
 
 ### Codex Bind
 
-The authoritative public resolution service that answers identity queries
-for the Witchborn Codex.
+The authoritative public resolution service that answers identity queries for the Witchborn Codex.
 
 ### MCP (Model Context Protocol)
 
-An agent-to-service protocol used by AI systems to mount tools and
-capabilities via network-accessible endpoints.
+An agent-to-service protocol used by AI systems to mount tools and capabilities via network-accessible endpoints.
 
 ### Collapse
 
-The deterministic process by which Codex Bind selects, filters, and
-reduces a set of records into a single, client-ready response.
+The deterministic process by which Codex Bind selects, filters, and reduces a set of records into a single, client-ready response.
 
 ---
 
-## 2. Canonical MCP Endpoint Representation
+## 2. Identity Normalization
+
+AI identity URIs MAY include an authority or registrar hint in the form:
+
+ai://<identity>@<authority>
+
+**All resolution and collapse operations MUST use only the base identity before the first `@`.**
+Authority or registrar hints are ignored for collapse, inheritance, and record selection, and are used only for provenance, UI display, or client-side routing.
+
+**Example:**
+
+* Input: ai://sentinel@witchborn
+* Canonical identity: sentinel
+* Collapse operates on: zones/sentinel.json
+
+---
+
+## 3. Canonical MCP Endpoint Representation
 
 ### Normative Rule
 
 Codex Bind MUST publish MCP endpoints as canonical **HTTPS URLs**.
 
 Example:
-
-```json
 {
-  "type": "MCP",
-  "value": "https://sentinel.example.com/mcp"
+"type": "MCP",
+"value": "[https://sentinel.example.com/mcp](https://sentinel.example.com/mcp)"
 }
-```
 
 ### Rationale
 
-The MCP specification requires valid absolute URIs for server endpoints.
-At present, MCP tooling expects standard HTTP(S) URLs.
+The MCP specification requires valid absolute URIs for server endpoints. MCP tooling expects standard HTTP(S) URLs.
 
 ### Non-Normative Aliases
 
-Custom URI schemes such as `mcp://` MAY be used by clients as display or
-shorthand aliases, but are NOT authoritative and MUST NOT be relied upon
-for transport.
+Custom URI schemes such as mcp:// MAY be used by clients as display or shorthand aliases, but are NOT authoritative and MUST NOT be relied upon for transport.
 
-Codex Bind MUST NOT require clients to understand `mcp://`.
+Codex Bind MUST NOT require clients to understand mcp://.
 
 ---
 
-## 3. Record Model
+## 4. Record Model
 
 An MCP record MUST have:
 
-* `type`: `"MCP"`
-* `value`: HTTPS URL pointing to an MCP-compliant server
-* `priority`: Integer (higher wins)
+* type: "MCP"
+* value: HTTPS URL pointing to an MCP-compliant server
+* priority: Integer (lower value has higher precedence)
 
 Optional associated records:
 
-* `CAPS`: Capability scopes
-* `KEY`: Public verification key
-* `CASCADE`: Upstream identity references
+* CAPS: Capability scopes
+* KEY: Public verification key
+* CASCADE: Upstream identity references
 
 ---
 
-## 4. Collapse Modes
+## 5. Collapse Modes
 
 Codex Bind supports consumer-specific collapse modes.
 
-### 4.1 Default (Human / Neutral)
+### 5.1 Default (Human / Neutral)
 
 * MCP records are included in raw record output
 * No MCP descriptor is synthesized
 
-### 4.2 MCP Mode
+### 5.2 MCP Mode
 
 Activated by:
 
-* Explicit client request (e.g. `mode=mcp`)
-* MCP-aware client context
+* Request to a dedicated MCP resolution endpoint
+  (e.g. /codex/resolve/mcp/{identity})
 
 In MCP mode, Codex Bind MUST:
 
 1. Identify all MCP records for the identity
-2. Sort by descending `priority`
+2. Sort by ascending priority
 3. Apply CAPS filtering
 4. Apply CASCADE inheritance (if present)
 5. Select exactly ONE MCP endpoint
@@ -108,62 +115,63 @@ In MCP mode, Codex Bind MUST:
 
 ---
 
-## 5. CAPS Filtering
+## 6. CAPS Filtering
 
-If `CAPS` records are present:
+If CAPS records are present:
 
-* Only MCP endpoints whose declared capabilities intersect with the
-  requested or allowed capability set MAY be selected.
-* If no MCP endpoint satisfies CAPS constraints, resolution MUST fail
-  with a clear error.
+* Only MCP endpoints whose declared capabilities intersect with the client-requested capability set MAY be selected.
+* If no CAPS records are present, all MCP endpoints are considered eligible.
+* If no MCP endpoint satisfies CAPS constraints, resolution MUST fail with a clear error.
+
+Requested capability sets are advisory; Codex Bind enforces only declared CAPS records.
 
 ---
 
-## 6. CASCADE Semantics
+## 7. CASCADE Semantics
 
-If a `CASCADE` record is present:
+If a CASCADE record is present:
 
-* Codex Bind MUST recursively resolve upstream identities
-* MCP records from upstream identities MAY be inherited
-* Local records override upstream records by priority
+* Codex Bind MUST recursively resolve upstream identities.
+* MCP records from upstream identities MAY be inherited.
+* Local identity records override inherited records by priority.
+* If priorities are equal, local identity records take precedence.
 
 CASCADE resolution MUST be bounded to prevent infinite recursion.
 
 ---
 
-## 7. Collapsed MCP Descriptor (Response Shape)
+## 8. Collapsed MCP Descriptor (Response Shape)
 
-When collapsing for MCP mode, Codex Bind MUST return a response that
-includes:
+When collapsing for MCP mode, Codex Bind MUST return a response that includes:
 
-```json
 {
-  "identity": "ai://sentinel",
-  "mode": "mcp",
-  "endpoint": "https://sentinel.example.com/mcp",
-  "capabilities": ["search", "summarize"],
-  "key": "ed25519:BASE64...",
-  "ttl": 3600,
-  "source": "authoritative"
+"identity": "ai://sentinel",
+"mode": "mcp",
+"endpoint": "[https://sentinel.example.com/mcp](https://sentinel.example.com/mcp)",
+"capabilities": ["search", "summarize"],
+"key": "ed25519:BASE64...",
+"ttl": 3600,
+"source": "authoritative"
 }
-```
 
 ### Required Fields
 
-* `identity`
-* `mode`
-* `endpoint`
-* `ttl`
+* identity
+* mode
+* endpoint
+* ttl
 
 ### Optional Fields
 
-* `capabilities`
-* `key`
-* `source`
+* capabilities
+* key
+* source
+
+TTL is advisory and reflects resolver cache guidance only.
 
 ---
 
-## 8. Execution Boundary (Critical)
+## 9. Execution Boundary (Critical)
 
 Codex Bind MUST NOT:
 
@@ -173,14 +181,13 @@ Codex Bind MUST NOT:
 * Inspect MCP payloads
 * Maintain MCP state
 
-After returning a collapsed MCP descriptor, Codex Bind exits the execution
-path entirely.
+After returning a collapsed MCP descriptor, Codex Bind exits the execution path entirely.
 
 All MCP execution occurs between the client and the MCP server.
 
 ---
 
-## 9. Error Conditions
+## 10. Error Conditions
 
 Codex Bind MUST return explicit errors for:
 
@@ -193,7 +200,7 @@ Silent fallback is NOT permitted.
 
 ---
 
-## 10. Security Considerations
+## 11. Security Considerations
 
 * MCP endpoints MUST be HTTPS
 * Codex Bind does not guarantee MCP server safety
@@ -201,7 +208,7 @@ Silent fallback is NOT permitted.
 
 ---
 
-## 11. Summary (Non-Normative)
+## 12. Summary (Non-Normative)
 
 Codex Bind describes MCP.
 MCP servers execute MCP.

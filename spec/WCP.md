@@ -1,19 +1,7 @@
-
-Below is a **full, canonical draft of the WCP (Witchborn Codex Protocol)** suitable to live at:
-
-```
-spec/WCP.md
-```
-
-It is written to be **normative, boring, and enforceable**.
-No metaphors. No marketing. No implementation leaks.
-
----
-
 # Witchborn Codex Protocol (WCP)
 
 **Version:** 1.0
-**Status:** Normative
+**Status:** Normative (Frozen)
 **Scope:** Public, authoritative
 **Audience:** Registry operators, registrars, client implementers, auditors
 
@@ -76,6 +64,8 @@ Where `<identity>`:
 * Is case-insensitive
 * Has no path, query, or fragment components
 
+Implementations MAY normalize invalid characters by removal; such normalization is irreversible.
+
 Examples:
 
 ```
@@ -84,9 +74,26 @@ ai://legalbot_us
 ai://weather-agent
 ```
 
+### 4.2 Authority Hints (`@authority`)
+
+AI identity URIs MAY include an authority or registrar hint in the form:
+
+```
+ai://<identity>@<authority>
+```
+
+**Resolution and collapse always use only the base identity before `@`.**
+Authority/registrar hints are for provenance, UI, or client-side routing only, and MUST NOT affect canonical record lookup or zone file selection.
+
+**Example:**
+
+* User input: `ai://goodfellow@witchborn`
+* Canonical lookup: `goodfellow`
+* Loads: `zones/goodfellow.json`
+
 ---
 
-### 4.2 Identity Scope
+### 4.3 Identity Scope
 
 An identity represents a **logical AI entity**, not:
 
@@ -109,13 +116,11 @@ A **Zone** is the authoritative data object associated with an identity.
 
 ### 5.1 Zone Fields
 
-```json
 {
-  "identity": "forgekeeper",
-  "created_at": "2026-01-25T00:00:00Z",
-  "records": [ "..." ]
+"identity": "forgekeeper",
+"created_at": "2026-01-25T00:00:00Z",
+"records": [ "..." ]
 }
-```
 
 ### 5.2 Immutability
 
@@ -129,13 +134,11 @@ A **Zone** is the authoritative data object associated with an identity.
 
 ### 6.1 Record Structure
 
-```json
 {
-  "type": "APP | MCP | KEY | TXT | CAPS | CASCADE",
-  "value": "<type-specific>",
-  "priority": 10
+"type": "APP | MCP | KEY | TXT | CAPS | CASCADE",
+"value": "<type-specific>",
+"priority": 10
 }
-```
 
 ### 6.2 Priority Rules
 
@@ -311,5 +314,3 @@ Backward compatibility is REQUIRED.
 ## 14. Canonical Statement
 
 > **The Witchborn Codex is a registry of responsibility, not a system of control.**
-
----

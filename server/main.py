@@ -2,13 +2,15 @@ import json
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Literal, Set
 
-from fastapi import FastAPI, HTTPException
-from fastapi import Query
-from fastapi.responses import FileResponse
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI, HTTPException, Query
+from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel, Field
+
+# ============================================================
+# APP SETUP
+# ============================================================
 
 APP_ROOT = Path(__file__).resolve().parents[1]
 WWW_ROOT = APP_ROOT / "www"
@@ -29,17 +31,22 @@ app = FastAPI(
     },
     license_info={
         "name": "ForgeBorn License v1.0.1",
-        "url": "https://github.com/WitchbornSystems/witchborn-codex/blob/main/LICENSE"
+        "url": "https://github.com/WitchbornSystems/witchborn-codex/blob/main/LICENSE",
     },
 )
 
+# ============================================================
+# STORAGE
+# ============================================================
 
-# --- STORAGE ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ZONES_DIR = os.path.join(BASE_DIR, "..", "zones")
 os.makedirs(ZONES_DIR, exist_ok=True)
 
-# --- GENESIS PROTECTIVE HOLDS ---
+# ============================================================
+# GENESIS PROTECTIVE HOLDS
+# ============================================================
+
 GENESIS_PROTECTED = {
     "openai": "OpenAI",
     "google": "Google",
@@ -49,9 +56,15 @@ GENESIS_PROTECTED = {
     "admin": "Witchborn Systems",
 }
 
-# --- MODELS ---
+# ============================================================
+# MODELS
+# ============================================================
+
+RecordType = Literal["APP", "MCP", "KEY", "TXT", "CAPS", "CASCADE"]
+
+
 class Record(BaseModel):
-    type: str = Field(..., description="APP, MCP, KEY, TXT, CAPS, CASCADE")
+    type: RecordType = Field(..., description="APP, MCP, KEY, TXT, CAPS, CASCADE")
     value: Any
     priority: int = 10
 
@@ -61,11 +74,14 @@ class ClaimRequest(BaseModel):
     records: List[Record]
 
 
-# --- HELPERS ---
+# ============================================================
+# HELPERS
+# ============================================================
+
 def normalize_identity(raw: str) -> str:
     ident = raw.strip().lower()
     if ident.startswith("ai://"):
-        ident = ident[len("ai://"):]
+        ident = ident[len("ai://") :]
     ident = ident.split("/")[0]
     ident = ident.split("@")[0]
     return ident
@@ -90,7 +106,47 @@ def save_zone(identity: str, data: Dict[str, Any]) -> None:
         json.dump(data, f, indent=2)
 
 
-# --- ROUTES ---
+def records_by_type(records: List[Dict[str, Any]], rtype: str) -> List[Dict[str, Any]]:
+    return [r for r in records if r.get("type") == rtype]
+
+
+def resolve_cascade(
+    identity: str,
+    seen: Set[str],
+    depth: int = 0,
+    max_depth: int = 8,
+) -> List[Dict[str, Any]]:
+    if identity in seen:
+        raise HTTPException(status_code=400, detail="CASCADE cycle detected")
+
+    if depth > max_depth:
+        raise HTTPException(status_code=400, detail="CASCADE depth exceeded")
+
+    seen.add(identity)
+
+    zone = load_zone(identity)
+    if not zone:
+        return []
+
+    records = zone.get("records", [])
+    cascades = records_by_type(records, "CASCADE")
+
+    inherited: List[Dict[str, Any]] = []
+
+    for c in cascades:
+        upstream = normalize_identity(str(c.get("value", "")))
+        inherited.extend(
+            resolve_cascade(upstream, seen, depth + 1, max_depth)
+        )
+
+    # Upstream first, local later (local overrides by priority)
+    return inherited + records
+
+
+# ============================================================
+# ROUTES
+# ============================================================
+
 @app.get("/health")
 def health():
     return {"status": "ok", "service": "witchborn-codex", "phase": "genesis"}
@@ -100,7 +156,6 @@ def health():
 def resolve(identity: str = Query(..., description="ai:// identity to resolve")):
     name = normalize_identity(identity)
 
-    # Protective hold
     if name in GENESIS_PROTECTED:
         owner = GENESIS_PROTECTED[name]
         return JSONResponse(
@@ -113,7 +168,6 @@ def resolve(identity: str = Query(..., description="ai:// identity to resolve"))
             },
         )
 
-    # Live zone
     zone = load_zone(name)
     if zone:
         return {
@@ -125,6 +179,70 @@ def resolve(identity: str = Query(..., description="ai:// identity to resolve"))
         }
 
     raise HTTPException(status_code=404, detail="Identity not forged.")
+
+
+@app.get("/codex/resolve/mcp/{identity}")
+def resolve_mcp(identity: str):
+    name = normalize_identity(identity)
+
+    if name in GENESIS_PROTECTED:
+        raise HTTPException(status_code=403, detail="Identity is protected.")
+
+    zone = load_zone(name)
+    if not zone:
+        raise HTTPException(status_code=404, detail="Identity not forged.")
+
+    all_records = resolve_cascade(name, seen=set())
+
+    mcp_records = records_by_type(all_records, "MCP")
+    if not mcp_records:
+        raise HTTPException(status_code=404, detail="No MCP records found.")
+
+    # Lower priority value wins
+    mcp_records.sort(key=lambda r: r.get("priority", 10))
+
+    caps_records = records_by_type(all_records, "CAPS")
+    key_records = records_by_type(all_records, "KEY")
+
+    allowed_caps: Set[str] = set()
+    if caps_records:
+        for c in caps_records:
+            val = c.get("value")
+            if isinstance(val, list):
+                allowed_caps.update(str(v) for v in val)
+
+        if allowed_caps:
+            filtered = []
+            for m in mcp_records:
+                m_caps = m.get("capabilities")
+                if not m_caps or set(m_caps) & allowed_caps:
+                    filtered.append(m)
+
+            if not filtered:
+                raise HTTPException(
+                    status_code=403,
+                    detail="CAPS constraints unsatisfied.",
+                )
+
+            mcp_records = filtered
+
+    selected = mcp_records[0]
+
+    response: Dict[str, Any] = {
+        "identity": f"ai://{name}",
+        "mode": "mcp",
+        "endpoint": selected["value"],
+        "ttl": 3600,
+        "source": "authoritative",
+    }
+
+    if allowed_caps:
+        response["capabilities"] = sorted(allowed_caps)
+
+    if key_records:
+        response["key"] = key_records[0].get("value")
+
+    return response
 
 
 @app.post("/codex/claim")
