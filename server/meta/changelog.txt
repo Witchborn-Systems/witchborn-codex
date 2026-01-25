@@ -1,0 +1,24 @@
+# Witchborn Codex Registry Change Log
+
+All significant changes to canonical zone files, protocol specs, and resolver logic MUST be documented here for audit, compliance, and governance.
+
+Each entry should include:
+- Date (UTC, ISO-8601)
+- Affected files/zones
+- Short description of the change
+- Author or responsible party (initials or handle)
+
+---
+
+2026-01-25T00:00:00Z  root.json, acme.json, spec/WCP.md, spec/MCP_COLLAPSE.md, spec/ZONE_SPEC.md
+- Genesis launch: initial canonical zone files, root, acme (demo), all protocol specs, main.py, and validation scripts.
+- Initial public resolver operational.
+- All specs and validators locked and published.
+- BIND record type added for authoritative resolver endpoint discovery.
+
+2026-01-25T01:32:00Z  server/validate_zone.py, server/validate_all_zones.py
+- Added Python zone file validators for contributor and CI enforcement.
+
+---
+
+# End of log
