@@ -118,6 +118,14 @@ Each entry in the `records` array MUST be a JSON object with at least:
   * `MCP`: object with at least endpoint (and optional features/capabilities/version)
 * `priority`: integer; lower value = higher precedence (default 10); only meaningful for MCP and any type with multiple entries
 
+### 2.2.1 BIND Record URI Formatting
+
+The value for a BIND record MUST be a full absolute HTTPS URI.
+
+Explicit Porting: If the registrar's cxbind server is hosted on a non-standard port, that port MUST be explicitly defined within the URI string (e.g., https://cxbind.registrar-node.net:8443).
+
+Registrar Responsibility: Registrars are responsible for ensuring their infrastructure is reachable on the port specified in their registered BIND record.
+
 ## 3. Zone File Authority
 
 * Canonical zone for an identity is the file at `zones/<identity>.json`, with identity normalized per the spec (authority/registrar hints always stripped).

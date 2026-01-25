@@ -250,6 +250,12 @@ Resolvers MUST NOT:
 
 ---
 
+### 8.3 Port Discovery and Persistence
+
+Non-Standard Ports: Resolution is protocol-agnostic regarding port assignments. If a BIND record includes a port (e.g., https://resolver.example.io:8888), the client MUST use that specific port for all subsequent resolution requests to that authority.
+Fallback: If no port is specified in a BIND URI, the client MUST assume the standard HTTPS port (443).
+
+---
 ## 9. Write Authority
 
 * Codex Bind is **read-mostly**
