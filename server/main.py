@@ -75,12 +75,28 @@ class Record(BaseModel):
 # ============================================================
 
 def normalize_identity(raw: str) -> str:
+    """
+    WCP v1.1.0 Canonical Normalizer.
+    Strips schemes, forbids DNS dots, and preserves @ for routing.
+    """
     ident = raw.strip().lower()
+
+    # 1. Strip Protocol Schemes
     if ident.startswith("ai://"):
-        ident = ident[len("ai://") :]
-    ident = ident.split("/")[0]
-    ident = ident.split("@")[0]
-    return ident
+        ident = ident[len("ai://"):]
+    elif ident.startswith("mcp://"):
+        ident = ident[len("mcp://"):]
+
+    # 2. Hard-Stop on DNS Confusion (The No-Dot Rule)
+    if "." in ident:
+        from fastapi import HTTPException
+        raise HTTPException(
+            status_code=400,
+            detail="Dots forbidden in ai:// names. Use @ for hierarchy."
+        )
+
+    # 3. Clean trailing slashes but keep @ and paths intact for 'The Squish'
+    return ident.rstrip("/")
 
 
 def zone_path(identity: str) -> str:

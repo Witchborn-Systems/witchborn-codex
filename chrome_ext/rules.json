@@ -1,0 +1,31 @@
+[
+  {
+    "id": 1,
+    "priority": 1,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "regexSubstitution": "https://witchbornsystems.ai/#home?query=\\1"
+      }
+    },
+    "condition": {
+      "regexFilter": "^ai://(.*)",
+      "resourceTypes": ["main_frame"]
+    }
+  },
+  {
+    "id": 2,
+    "priority": 1,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "regexSubstitution": "https://witchbornsystems.ai/#home?query=\\1"
+      }
+    },
+    "condition": {
+      "regexFilter": ".*[?&]q=ai%3A%2F%2F([^&]+)",
+      "resourceTypes": ["main_frame"],
+      "initiatorDomains": ["google.com", "bing.com", "duckduckgo.com"]
+    }
+  }
+]

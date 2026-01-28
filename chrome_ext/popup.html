@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { width: 320px; background: #020617; font-family: 'JetBrains Mono', monospace; padding: 20px; color: #94a3b8; border: 1px solid #1e293b; margin: 0; }
+        .header { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+        .logo { height: 24px; width: auto; }
+        .input-group { background: #000; border: 1px solid #334155; display: flex; align-items: center; padding: 2px; position: relative; }
+        .input-group:focus-within { border-color: #00f2ff; box-shadow: 0 0 10px rgba(0, 242, 255, 0.2); }
+        input { background: transparent; border: none; color: #fff; padding: 8px; width: 100%; outline: none; font-size: 13px; }
+        input::placeholder { color: rgba(148, 163, 184, 0.2); font-style: italic; }
+        .prefix { color: #00f2ff; font-weight: bold; padding-left: 8px; font-size: 13px; }
+        button { width: 100%; background: #00f2ff; color: #000; font-weight: 800; padding: 12px; margin-top: 15px; cursor: pointer; border: none; text-transform: uppercase; font-size: 11px; letter-spacing: 0.1em; transition: 0.3s; }
+        button:hover { background: #fff; }
+        #status { font-size: 9px; margin-top: 15px; color: #475569; text-transform: uppercase; letter-spacing: 0.1em; text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <img src="logo.png" class="logo">
+        <div style="font-size: 11px; color: #fff; font-weight: 800; letter-spacing: 0.2em;">CODEX BRIDGE</div>
+    </div>
+    <div class="input-group">
+        <span class="prefix">ai://</span>
+        <input id="ident" placeholder="name@authority" type="text" value="brandon@webai">
+    </div>
+    <button id="traceBtn">Initialize Trace</button>
+    <div id="status">Status: Discovery Engine Online</div>
+
+    <script>
+        const identInput = document.getElementById('ident');
+
+        // Smart-Clear for Popup
+        identInput.addEventListener('focus', function() {
+            if (['', 'name@authority', 'brandon@webai'].includes(this.value.toLowerCase())) {
+                this.value = '';
+            }
+        });
+
+        document.getElementById('traceBtn').addEventListener('click', () => {
+            const id = identInput.value.trim().toLowerCase();
+            if (id) {
+                chrome.tabs.create({ url: `https://www.witchbornsystems.org/#home?query=${id}` });
+            }
+        });
+    </script>
+</body>
+</html>

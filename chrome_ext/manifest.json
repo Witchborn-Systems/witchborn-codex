@@ -1,0 +1,33 @@
+{
+  "manifest_version": 3,
+  "name": "Witchborn Codex: Sovereign Bridge",
+  "version": "3.1",
+  "permissions": ["tabs"],
+  "host_permissions": [
+    "https://witchbornsystems.ai/*",
+    "http://localhost:8000/*",
+    "*://*.google.com/*",
+    "*://*.bing.com/*",
+    "*://*.duckduckgo.com/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.google.com/search*",
+        "*://*.bing.com/search*",
+        "*://*.duckduckgo.com/*"
+      ],
+      "js": ["interceptor.js"],
+      "run_at": "document_start"
+    }
+  ],
+  "omnibox": { "keyword": "wb" },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": "logo.png"
+  }
+}
