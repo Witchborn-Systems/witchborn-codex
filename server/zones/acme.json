@@ -33,10 +33,6 @@
       "value": "ed25519:ACME_PUBLIC_KEY_BASE64"
     },
     {
-      "type": "BIND",
-      "value": "https://cxbind.witchbornsystems.ai"
-    },
-    {
       "type": "APP",
       "value": "https://acme.example.com"
     },
