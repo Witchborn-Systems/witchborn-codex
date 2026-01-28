@@ -2,7 +2,7 @@
 
 
 a = Analysis(
-    ['build_cxlookup.py'],
+    ['build_ailookup.py'],
     pathex=[],
     binaries=[],
     datas=[],

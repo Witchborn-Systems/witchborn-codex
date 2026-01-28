@@ -1,61 +1,43 @@
 /**
- * Witchborn Codex: Unified Resolution Brain
- * Handles both Omnibox commands and Search Interception via API lookup.
+ * Witchborn Codex: Sovereign Bridge
+ * Routes ai:// requests to the Server-Side Redirector.
  */
 
-const API_ROOT = "https://witchbornsystems.ai/codex/resolve/mcp";
-const PROFILE_FALLBACK = "https://witchbornsystems.ai/#home?query=";
+const JUMP_ROOT = "https://witchbornsystems.ai/codex/go";
 
-// Central Logic: The "Smart" Resolver
-async function handleResolution(identity, tabId) {
+function handleResolution(identity, tabId) {
     if (!identity) return;
 
-    console.log(`[Brain] Resolving: ${identity}`);
+    // Remove protocol prefixes and whitespace
+    const cleanId = identity.replace(/^ai:\/\/|^mcp:\/\//i, "").trim();
 
-    try {
-        // 1. Query the Root Authority API
-        const response = await fetch(`${API_ROOT}/${encodeURIComponent(identity)}`);
+    // Construct the direct Jump URL
+    const targetUrl = `${JUMP_ROOT}/${encodeURIComponent(cleanId)}`;
 
-        let targetUrl = `${PROFILE_FALLBACK}${identity}`; // Default to profile
+    console.log(`[Brain] Routing to Server: ${targetUrl}`);
 
-        if (response.ok) {
-            const data = await response.json();
-
-            // 2. Check for App Interface (Sovereign) or Direct URL (Legacy)
-            if (data.mode === "sovereign_app" && data.record?.endpoint?.interface) {
-                targetUrl = data.record.endpoint.interface;
-            } else if (data.mode === "legacy_mcp" && data.endpoint.startsWith('http')) {
-                targetUrl = data.endpoint;
-            }
-        }
-
-        // 3. Execute the Redirect
-        console.log(`[Brain] Routing to: ${targetUrl}`);
-
-        if (tabId) {
-            chrome.tabs.update(tabId, { url: targetUrl });
-        } else {
-            chrome.tabs.update({ url: targetUrl });
-        }
-
-    } catch (error) {
-        console.error("[Brain] Error, falling back to profile:", error);
-        // Fallback ensures the user at least sees the 'Not Found' UI
-        const fallbackUrl = `${PROFILE_FALLBACK}${identity}`;
-        if (tabId) chrome.tabs.update(tabId, { url: fallbackUrl });
-        else chrome.tabs.update({ url: fallbackUrl });
+    if (tabId) {
+        chrome.tabs.update(tabId, { url: targetUrl });
+    } else {
+        chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+            if (tabs[0]) chrome.tabs.update(tabs[0].id, { url: targetUrl });
+        });
     }
 }
 
-// TRIGGER 1: Omnibox (User types 'wb' + Space)
-chrome.omnibox.onInputEntered.addListener((text) => {
-    handleResolution(text.trim().toLowerCase(), null);
-});
-
-// TRIGGER 2: Interceptor (User clicked 'ai://' or search hijacked)
+// Listen for messages from popup.js or interceptor.js
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === "resolve_identity") {
-        // sender.tab.id ensures we redirect the specific tab that did the search
-        handleResolution(request.identity, sender.tab.id);
+        const tabId = sender.tab ? sender.tab.id : null;
+        handleResolution(request.identity, tabId);
+
+        // Acknowledge receipt to prevent "Receiving end does not exist"
+        sendResponse({ status: "resolving" });
     }
+    return true; // Keep channel open for async work
+});
+
+// Omnibox support
+chrome.omnibox.onInputEntered.addListener((text) => {
+    handleResolution(text.trim().toLowerCase(), null);
 });

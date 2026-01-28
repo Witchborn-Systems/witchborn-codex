@@ -1,8 +1,15 @@
 {
   "manifest_version": 3,
-  "name": "Witchborn Codex: Sovereign Bridge",
-  "version": "3.1",
-  "permissions": ["tabs"],
+  "name": "AI:// Links",
+  "version": "3.6.1",
+  "author": "Witchborn Systems 501(c)(3)",
+  "description": "Unlock the sovereign web. Instantly resolve ai:// and mcp:// links to profiles, consoles, and AI endpoints via the Witchborn Codex.",
+  "homepage_url": "https://witchbornsystems.org",
+  "permissions": [
+    "tabs",
+    "activeTab",
+    "declarativeNetRequest"
+  ],
   "host_permissions": [
     "https://witchbornsystems.ai/*",
     "http://localhost:8000/*",
@@ -10,6 +17,15 @@
     "*://*.bing.com/*",
     "*://*.duckduckgo.com/*"
   ],
+  "declarative_net_request": {
+    "rule_resources": [
+      {
+        "id": "ruleset_1",
+        "enabled": true,
+        "path": "rules.json"
+      }
+    ]
+  },
   "content_scripts": [
     {
       "matches": [
@@ -21,13 +37,24 @@
       "run_at": "document_start"
     }
   ],
-  "omnibox": { "keyword": "wb" },
+  "omnibox": { 
+    "keyword": "ai" 
+  },
   "background": {
     "service_worker": "background.js",
     "type": "module"
   },
   "action": {
     "default_popup": "popup.html",
-    "default_icon": "logo.png"
+    "default_icon": {
+      "16": "logo.png",
+      "48": "logo.png",
+      "128": "logo.png"
+    }
+  },
+  "icons": {
+    "16": "logo.png",
+    "48": "logo.png",
+    "128": "logo.png"
   }
 }

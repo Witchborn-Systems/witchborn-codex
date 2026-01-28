@@ -4,12 +4,10 @@
     "priority": 1,
     "action": {
       "type": "redirect",
-      "redirect": {
-        "regexSubstitution": "https://witchbornsystems.ai/#home?query=\\1"
-      }
+      "redirect": { "regexSubstitution": "https://witchbornsystems.ai/codex/go/\\1" }
     },
     "condition": {
-      "regexFilter": "^ai://(.*)",
+      "regexFilter": "^ai://([^/?#\\s]+)",
       "resourceTypes": ["main_frame"]
     }
   },
@@ -18,12 +16,10 @@
     "priority": 1,
     "action": {
       "type": "redirect",
-      "redirect": {
-        "regexSubstitution": "https://witchbornsystems.ai/#home?query=\\1"
-      }
+      "redirect": { "regexSubstitution": "https://witchbornsystems.ai/codex/go/\\1" }
     },
     "condition": {
-      "regexFilter": ".*[?&]q=ai%3A%2F%2F([^&]+)",
+      "regexFilter": ".*[?&]q=ai%3A%2F%2F([^&\\s]+)",
       "resourceTypes": ["main_frame"],
       "initiatorDomains": ["google.com", "bing.com", "duckduckgo.com"]
     }

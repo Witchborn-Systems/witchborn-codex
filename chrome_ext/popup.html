@@ -22,27 +22,11 @@
     </div>
     <div class="input-group">
         <span class="prefix">ai://</span>
-        <input id="ident" placeholder="name@authority" type="text" value="brandon@webai">
+        <input id="ident" placeholder="name@authority" type="text" value="witchborn@webai">
     </div>
     <button id="traceBtn">Initialize Trace</button>
     <div id="status">Status: Discovery Engine Online</div>
 
-    <script>
-        const identInput = document.getElementById('ident');
-
-        // Smart-Clear for Popup
-        identInput.addEventListener('focus', function() {
-            if (['', 'name@authority', 'brandon@webai'].includes(this.value.toLowerCase())) {
-                this.value = '';
-            }
-        });
-
-        document.getElementById('traceBtn').addEventListener('click', () => {
-            const id = identInput.value.trim().toLowerCase();
-            if (id) {
-                chrome.tabs.create({ url: `https://www.witchbornsystems.org/#home?query=${id}` });
-            }
-        });
-    </script>
+    <script src="popup.js"></script>
 </body>
 </html>

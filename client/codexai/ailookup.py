@@ -18,7 +18,7 @@ def main():
 
         # 1. RAW MODE (Admin View)
         if args.raw:
-            print(f";; <<>> cxlookup 1.0.0 <<>> {args.uri} (RAW)")
+            print(f";; <<>> ailookup 1.0.0 <<>> {args.uri} (RAW)")
             data = resolver.get_full_context(args.uri)
             print(json.dumps(data, indent=2))
             return
@@ -36,7 +36,7 @@ def main():
         mode = result.get("mode", "UNKNOWN").upper()
 
         if mode == "APP":
-            print(f";; <<>> cxlookup 1.0.0 <<>> {args.uri}")
+            print(f";; <<>> ailookup 1.0.0 <<>> {args.uri}")
             print(f";; TYPE: HUMAN (APP)")
             print(f";; ANSWER: {result['url']}")
 
