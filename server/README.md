@@ -4,21 +4,26 @@ This directory contains the authoritative resolution engine for the Witchborn Co
 
 ---
 
-## 🚀 Quick Start (Production)
 
-### 1. Initialize Environment
-From the project root, create your virtual environment and install dependencies:
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r ../requirements.txt
-```
+## 🚀 Installation & Service Setup
 
-### 2. Install as a Service
-Run the included installer to register the server with `systemd` (Linux):
-```bash
-sudo ./install_service.sh
-```
+While the server code lives in this directory, it relies on a shared environment at the project root.
+
+1. **Setup Environment (From Project Root):**
+   ```bash
+   cd ..
+   python3 -m venv .venv
+   source .venv/bin/activate
+   pip install -r requirements.txt
+   ```
+
+2. **Install Service (From Server Directory):**
+   ```bash
+   cd server
+   sudo ./install_service.sh
+   ```
+
+This ensures the `systemd` unit file correctly maps to your `.venv` for `uvicorn` execution.
 
 ---
 

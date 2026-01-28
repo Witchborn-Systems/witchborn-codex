@@ -276,4 +276,6 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    import uvicorn
+    # This block is required to prevent the service from exiting immediately
+    uvicorn.run(app, host="0.0.0.0", port=9000)
