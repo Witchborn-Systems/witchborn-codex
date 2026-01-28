@@ -36,7 +36,8 @@ The deterministic process by which Codex Bind selects, filters, and reduces a se
 
 AI identity URIs MAY include an authority or registrar hint in the form: `ai://<identity>@<authority>`.
 
-**All resolution and collapse operations MUST use only the base identity before the first `@`.** Authority or registrar hints are ignored for collapse, inheritance, and record selection.
+**All resolution and collapse operations MUST use only the base identity before the first `@`.** 
+Authority or registrar hints are used by Discovery Proxies to route requests to the correct authoritative node; however, once the authoritative node is reached, the hint is stripped to resolve the local identity file.
 
 ---
 
@@ -94,6 +95,10 @@ Activated by a request to a dedicated MCP resolution endpoint (e.g., `/codex/res
 6.  **Emit a collapsed MCP descriptor**: Return the final synthesized JSON object to the client.
 ---
 
+### 5.3 Proxy Squishing 
+Discovery Authorities SHOULD provide a flattened MCP endpoint at /resolve/mcp/{id}. This endpoint performs the "Squish" logic locally for sovereign identities and proxies the request for federated identities, ensuring agents always receive a machine-ready descriptor from a single trusted source.
+
+---
 ## 6. CAPS Filtering
 
 If CAPS records are present, only MCP endpoints whose declared capabilities intersect with the client-requested capability set MAY be selected. If no MCP endpoint satisfies CAPS constraints, resolution MUST fail with a clear error.

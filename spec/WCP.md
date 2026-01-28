@@ -35,14 +35,14 @@ The Codex is a **civil registry**, not a runtime.
 
 | Term                    | Definition                                                   |
 | ----------------------- | ------------------------------------------------------------ |
-| **Codex**               | The authoritative registry of AI identities and records      |
+| **Codex** | The authoritative registry of AI identities and records      |
 | **Codex Bind (cxbind)** | A public resolver that answers questions about Codex records |
-| **Registrar (cxreg)**   | A writable system authorized to submit changes               |
-| **Identity**            | A canonical, human-readable AI entity name                   |
-| **Zone**                | The complete record set bound to an identity                 |
-| **Record**              | A typed declaration attached to an identity                  |
-| **MCP**                 | Machine Control Protocol descriptor (descriptive only)       |
-| **Collapse**            | Deterministic transformation of records into a resolved view |
+| **Registrar (cxreg)** | A writable system authorized to submit changes               |
+| **Identity** | A canonical, human-readable AI entity name                   |
+| **Zone** | The complete record set bound to an identity                 |
+| **Record** | A typed declaration attached to an identity                  |
+| **MCP** | Machine Control Protocol descriptor (descriptive only)       |
+| **Collapse** | Deterministic transformation of records into a resolved view |
 
 ---
 
@@ -57,56 +57,15 @@ ai://<identity>
 ```
 
 Where `<identity>`:
-
-* Is lowercase
-* Is ASCII
-* May include `a–z`, `0–9`, `-`, `_`
-* Is case-insensitive
-* Has no path, query, or fragment components
-
-Implementations MAY normalize invalid characters by removal; such normalization is irreversible.
-
-Examples:
-
-```
-ai://forgekeeper
-ai://legalbot_us
-ai://weather-agent
-```
+* Is lowercase, ASCII, and case-insensitive.
+* May include `a–z`, `0–9`, `-`, `_`.
+* Has no path, query, or fragment components.
 
 ### 4.2 Authority Hints (`@authority`)
 
-AI identity URIs MAY include an authority or registrar hint in the form:
+AI identity URIs MAY include an authority or registrar hint in the form: `ai://<identity>@<authority>`.
 
-```
-ai://<identity>@<authority>
-```
-
-**Resolution and collapse always use only the base identity before `@`.**
-Authority/registrar hints are for provenance, UI, or client-side routing only, and MUST NOT affect canonical record lookup or zone file selection.
-
-**Example:**
-
-* User input: `ai://goodfellow@witchborn`
-* Canonical lookup: `goodfellow`
-* Loads: `zones/goodfellow.json`
-
----
-
-### 4.3 Identity Scope
-
-An identity represents a **logical AI entity**, not:
-
-* A model
-* A deployment
-* A server
-* A version
-
-Identity **persists across**:
-
-* Model swaps
-* Infrastructure changes
-* Hosting providers
+**Resolution and collapse always use only the base identity before `@`.** Authority hints are utilized by Discovery Proxies to route requests to the correct authoritative node; however, once the authoritative node is reached, the hint is stripped to resolve the local identity file.
 
 ---
 
@@ -115,216 +74,71 @@ Identity **persists across**:
 A **Zone** is the authoritative data object associated with an identity.
 
 ### 5.1 Zone Fields
-
-{
-"identity": "forgekeeper",
-"created_at": "2026-01-25T00:00:00Z",
-"records": [ "..." ]
-}
+Zones include `identity`, `created_at`, and an array of `records`. 
 
 ### 5.2 Immutability
-
-* `identity` and `created_at` are immutable
-* All changes occur through record mutation, addition, or removal
-* History retention is implementation-defined
+`identity` and `created_at` are immutable. All changes occur through record mutation, addition, or removal.
 
 ---
 
 ## 6. Record Model
 
 ### 6.1 Record Structure
-
-{
-"type": "APP | MCP | KEY | TXT | CAPS | CASCADE",
-"value": "<type-specific>",
-"priority": 10
-}
+Records contain a `type`, a `value`, and a `priority` (Default: 10).
 
 ### 6.2 Priority Rules
-
-* Lower numbers have higher precedence
-* Default priority is `10`
-* Priority is only meaningful **within the same record type**
+Lower numbers have higher precedence. Priority is only meaningful **within the same record type**.
 
 ---
 
 ## 7. Record Types (Normative)
 
-### 7.1 `APP`
-
-Application or descriptive metadata.
-
-Used for:
-
-* Human-readable descriptions
-* URLs
-* Contact references
-
-Codex does **not** interpret APP semantics.
-
----
-
-### 7.2 `MCP`
-
-A Machine Control Protocol descriptor.
-
-* Value MUST reference an **HTTPS endpoint**
-* Codex MUST NOT execute MCP
-* MCP execution is always client ↔ MCP server
-
-Details of MCP handling are defined in `MCP_COLLAPSE.md`.
-
----
-
-### 7.3 `KEY`
-
-Public cryptographic material.
-
-* Used for identity binding, signatures, or verification
-* Codex does not enforce crypto semantics
-* Codex publishes only
-
----
-
-### 7.4 `TXT`
-
-Freeform textual declarations.
-
-* Human or machine readable
-* No enforced schema
-* No semantic guarantees
-
----
-
-### 7.5 `CAPS`
-
-Capability declarations.
-
-Examples:
-
-* Network access permissions
-* Actuation constraints
-* Jurisdictional limits
-
-CAPS records are **descriptive only**.
-Enforcement occurs elsewhere.
-
----
-
-### 7.6 `CASCADE`
-
-Inheritance or delegation reference.
-
-* Points to another identity
-* Used during collapse resolution
-* Cycles MUST be detected and rejected
+* **7.1 APP**: Application or descriptive metadata (URLs, Contact references).
+* **7.2 MCP**: Machine Control Protocol descriptor. MUST reference an HTTPS endpoint.
+* **7.3 KEY**: Public cryptographic material for verification.
+* **7.4 TXT**: Freeform textual declarations.
+* **7.5 CAPS**: Descriptive capability declarations (constraints, permissions).
+* **7.6 CASCADE**: Inheritance reference to another identity.
 
 ---
 
 ## 8. Resolution Semantics
 
 ### 8.1 Resolver Responsibility
-
-A Codex resolver:
-
-* Loads the authoritative zone
-* Validates record structure
-* Returns records **without execution**
-* May return collapsed views
-
-Resolvers MUST NOT:
-
-* Execute MCP
-* Rewrite records
-* Inject inferred meaning
-
----
+A Codex resolver loads zones, validates structure, and returns records without execution.
 
 ### 8.2 Resolution States
-
-| Status         | Meaning                           |
-| -------------- | --------------------------------- |
-| `LIVE`         | Identity exists and is resolvable |
-| `PROTECTED`    | Identity reserved by policy       |
-| `UNREGISTERED` | No zone exists                    |
-
----
+* `LIVE`: Identity exists and is resolvable.
+* `PROTECTED`: Identity reserved by policy.
+* `UNREGISTERED`: No zone exists.
+* `DELEGATED`: Authority resides elsewhere.
 
 ### 8.3 Port Discovery and Persistence
-
-Non-Standard Ports: Resolution is protocol-agnostic regarding port assignments. If a BIND record includes a port (e.g., https://resolver.example.io:8888), the client MUST use that specific port for all subsequent resolution requests to that authority.
-Fallback: If no port is specified in a BIND URI, the client MUST assume the standard HTTPS port (443).
-
----
+Resolution is protocol-agnostic regarding port assignments. If a BIND record includes a port (e.g., `:9000`), the client MUST use that specific port for subsequent requests to that authority.
 
 ### 8.4 Federated Delegation (BIND)
 An identity zone MAY delegate authoritative resolution to an external server using a `BIND` record.
 
-* **Behavior**: If the primary resolver encounters a `BIND` record pointing to a URI other than its own, it MUST notify the client that the identity is **DELEGATED**.
-* **Client Action**: The client SHOULD then repeat the resolution request against the delegated URI provided in the `BIND` record.
+#### 8.4.1 Discovery Proxying
+To reduce client complexity, a Root Authority MAY act as a Discovery Proxy. When a Root receives a resolution request for a delegated identity (e.g., `user@registrar`), it SHOULD recursively fetch the record from the BIND target and return the authoritative result to the client.
 
 ---
+
 ## 9. Write Authority
-
-* Codex Bind is **read-mostly**
-* Writes originate from registrars
-* Genesis write paths are temporary
-* Long-term writes MUST be authenticated and signed
-
-Registrar protocol is out of scope for WCP v1.
+Writes originate from registrars. Genesis write paths are temporary; long-term writes MUST be authenticated and signed.
 
 ---
 
-## 10. Genesis Period
-
-During Genesis:
-
-* Certain identities may be protected
-* Claim operations may exist inline
-* Behavior is transitional
-
-Genesis mechanisms MUST be removable without breaking WCP semantics.
+## 10. Security Model
+The Codex assumes public readability and no secret material. Security guarantees are **descriptive**, not preventative.
 
 ---
 
-## 11. Security Model
-
-The Codex assumes:
-
-* Public readability
-* Zero trust in clients
-* No secret material
-
-Security guarantees are **descriptive**, not preventative.
+## 11. Non-Goals (Explicit)
+WCP does NOT attempt to act as a policy engine, judge behavior, or enforce ethics. Those concerns belong to **execution environments and law**.
 
 ---
 
-## 12. Non-Goals (Explicit)
-
-WCP does NOT attempt to:
-
-* Prevent misuse
-* Enforce ethics
-* Guarantee safety
-* Judge behavior
-* Act as a policy engine
-
-Those concerns belong to **execution environments and law**.
-
----
-
-## 13. Extensibility
-
-Future versions may introduce:
-
-* New record types
-* Additional collapse rules
-* Signed zone bundles
-
-Backward compatibility is REQUIRED.
-
----
-
-## 14. Canonical Statement
+## 12. Canonical Statement
 
 > **The Witchborn Codex is a registry of responsibility, not a system of control.**
