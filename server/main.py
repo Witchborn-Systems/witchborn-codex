@@ -40,7 +40,8 @@ app = FastAPI(
 # ============================================================
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-ZONES_DIR = os.path.join(BASE_DIR, "..", "zones")
+# Change ".." to "." or remove the join segment to look in the current server/zones dir
+ZONES_DIR = os.path.join(BASE_DIR, "zones")
 os.makedirs(ZONES_DIR, exist_ok=True)
 
 # ============================================================
