@@ -1,4 +1,5 @@
 # Witchborn Codex
+*Note this is a work in progress do not try to use until it is released*
 
 The Witchborn Codex is a public, nonprofit reference implementation of a neutral
 identity and resolution layer for autonomous AI systems.
