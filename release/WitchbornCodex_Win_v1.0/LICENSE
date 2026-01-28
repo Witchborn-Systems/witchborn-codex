@@ -1,0 +1,73 @@
+ForgeBorn License
+A Witchborn Systems Attribution Oath
+Version 1.0.1, Released October 31, 2025
+
+This license governs the use, modification, and distribution of code, AI/ML models, datasets, and creative works under the ForgeBorn framework. It is an ethical commitment, not a legally binding contract, relying on community goodwill and transparency. Consult legal counsel for binding applications.
+
+Terms of Use
+
+Freedom to Use and Remix:
+You may use, modify, share, and build upon ForgeBorn works freely for any purpose, including personal, educational, or commercial use.
+
+Mandatory Attribution:
+Credit the original author(s) visibly in your project’s primary UI, documentation, or an accessible About page using:
+
+Built with the ForgeBorn License by [author/project], a Witchborn Systems Attribution Oath
+https://github.com/Witchborn-Systems/ForgeBorn-License
+
+For APIs or AI outputs, include attribution in response headers or linked documentation.
+
+ * **Scope:** This attribution rule applies **when you modify, publicly distribute, or embed the work** (e.g., in a public-facing application, API, or as part of a new derivative project).
+ * **Exception:** Attribution is **not required for general or private personal use** (e.g., running a model on your local machine for your own experimentation or private projects).
+
+SaaS and Public Endpoints:
+Hosting on SaaS platforms or public endpoints is permitted, provided credit is clear to all users (e.g., via UI badges or links).
+
+No Unauthorized Resell or White-Label:
+You may not white-label, close-source, or resell code, models, weights, or data without explicit written permission from the original author(s).
+
+Author Rights:
+Original author(s) retain the right to sell or license their work independently, with no obligation to provide source code.
+
+Binary-Only Distribution:
+You may distribute binaries or pre-trained models without source code, at your discretion.
+
+Scaling and Commercial Use:
+For projects generating >$100K/year revenue or serving >50,000 users, credit is mandatory, and partnership/support (e.g., donation or collaboration) is strongly encouraged. Contact the maker via witchbornsystems.org/partnerships within 30 days of reaching this threshold.
+Commercial projects with >10,000 users must register in the Forge Hall within 60 days.
+
+Ethical Use:
+Prohibited uses include state-sponsored surveillance, oppression, or deceptive AI, as determined by community consensus via the Forge Hall.
+
+Attribution and the Forge Hall
+
+Include the standard credit text and tag your work with #WitchbornSystems_Oathbound.
+Register your project at witchbornsystems.org/forgehall for public recognition, a digital badge, and a makers mark.
+Submission requires a pull request with project details; badges are issued after community review (within 14 days).
+Tiered badges: Bronze (basic use), Silver (contributors), Gold (significant enhancements).
+
+AI, Models, and Datasets
+
+You may train, fine-tune, deploy, or remix ForgeBorn-licensed models, weights, or datasets, provided you:
+
+Credit original authors visibly (e.g., in docs or UI).
+
+Disclose derivation in public-facing materials.
+
+Avoid white-labeling or reselling without permission.
+
+For SaaS, ensure user-facing credit (e.g., badge or link).
+
+Binary distribution of models is allowed; source code is optional.
+
+Derivative works must adopt ForgeBorn unless the author approves an alternative license.
+
+License Governance and Versioning
+
+1.  **License Perpetuity:** Witchborn Systems may release new versions or amendments to the ForgeBorn License, but the version of the license that applies to a work is **always the one the work was originally released under.** Your rights to use that work cannot be retroactively changed or revoked.
+
+2.  **Community Governance:** As an open-honor framework, we welcome community input. **Amendments or suggestions for new versions may be proposed via a pull request** on the official ForgeBorn License GitHub repository: `https://github.com/Witchborn-Systems/ForgeBorn-License`.
+
+Disclaimer
+
+This license is provided AS IS. Witchborn Systems and the original author(s) are not liable for any misuse or misinterpretation. For legal binding, adapt this into a formal contract with professional advice.
