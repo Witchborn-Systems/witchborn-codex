@@ -2,9 +2,9 @@ import json
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import List, Dict, Any, Literal, Set
+from typing import List, Dict, Any, Literal, Set, Optional
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel, Field
 
@@ -16,13 +16,12 @@ APP_ROOT = Path(__file__).resolve().parents[1]
 WWW_ROOT = APP_ROOT / "www"
 
 app = FastAPI(
-    title="Witchborn Codex API",
-    version="1.1.0-genesis",
+    title="Witchborn Codex API (Registrar)",
+    version="1.1.1-genesis",
     description=(
         "Public, nonprofit reference implementation of the Witchborn Codex.\n\n"
-        "This API provides identity resolution and registry services for "
-        "autonomous AI systems.\n\n"
-        "This service does NOT host AI models, proxy traffic, or execute MCP calls."
+        "This service provides authoritative identity resolution for "
+        "autonomous AI systems."
     ),
     terms_of_service="https://witchbornsystems.ai/governance",
     contact={
@@ -40,7 +39,6 @@ app = FastAPI(
 # ============================================================
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-# Change ".." to "." or remove the join segment to look in the current server/zones dir
 ZONES_DIR = os.path.join(BASE_DIR, "zones")
 os.makedirs(ZONES_DIR, exist_ok=True)
 
@@ -78,19 +76,13 @@ class Record(BaseModel):
 def normalize_identity(raw: str) -> str:
     ident = raw.strip().lower()
 
-    # 1. Strip Protocol Schemes
     if ident.startswith("ai://"):
         ident = ident[len("ai://"):]
     elif ident.startswith("mcp://"):
         ident = ident[len("mcp://"):]
 
-    # 2. Hard-Stop on DNS Confusion
-    if "." in ident:
-        from fastapi import HTTPException
-        raise HTTPException(status_code=400, detail="Dots forbidden. Use @ for hierarchy.")
-
-    # 3. Strip Authority Hint (THE FIX)
     if "@" in ident:
+        # Registrar Logic: Resolve the local identity portion
         ident = ident.split("@")[0]
 
     return ident.rstrip("/")
@@ -114,10 +106,10 @@ def records_by_type(records: List[Dict[str, Any]], rtype: str) -> List[Dict[str,
 
 
 def resolve_cascade(
-    identity: str,
-    seen: Set[str],
-    depth: int = 0,
-    max_depth: int = 8,
+        identity: str,
+        seen: Set[str],
+        depth: int = 0,
+        max_depth: int = 8,
 ) -> List[Dict[str, Any]]:
     if identity in seen:
         raise HTTPException(status_code=400, detail="CASCADE cycle detected")
@@ -126,21 +118,17 @@ def resolve_cascade(
         raise HTTPException(status_code=400, detail="CASCADE depth exceeded")
 
     seen.add(identity)
-
     zone = load_zone(identity)
     if not zone:
         return []
 
     records = zone.get("records", [])
     cascades = records_by_type(records, "CASCADE")
-
     inherited: List[Dict[str, Any]] = []
 
     for c in cascades:
         upstream = normalize_identity(str(c.get("value", "")))
-        inherited.extend(
-            resolve_cascade(upstream, seen, depth + 1, max_depth)
-        )
+        inherited.extend(resolve_cascade(upstream, seen, depth + 1, max_depth))
 
     return inherited + records
 
@@ -165,26 +153,12 @@ def resolve(identity: str = Query(..., description="ai:// identity to resolve"))
             content={
                 "identity": f"ai://{name}",
                 "status": "PROTECTED",
-                "message": f"Reserved for {owner}.",
-                "claim_url": f"https://www.witchbornsystems.org/claim?id={name}",
+                "message": f"Reserved for {owner}."
             },
         )
 
     zone = load_zone(name)
     if zone:
-        # Federation/Delegation Check (WCP 8.4)
-        bind_records = records_by_type(zone['records'], "BIND")
-        for b in bind_records:
-            bind_url = b.get("value", "")
-            # If BIND points away from our server, signal delegation
-            if "witchbornsystems.ai" not in bind_url:
-                return {
-                    "identity": f"ai://{name}",
-                    "status": "DELEGATED",
-                    "authoritative_server": bind_url,
-                    "message": "This identity is managed by an external authority."
-                }
-
         return {
             "identity": f"ai://{name}",
             "status": "LIVE",
@@ -200,7 +174,7 @@ def resolve(identity: str = Query(..., description="ai:// identity to resolve"))
 @app.get("/codex/resolve/mcp/{identity}/{subpath:path}")
 def resolve_mcp(identity: str, subpath: str = ""):
     """
-    MCP Collapse with Path Awareness (MCP_COLLAPSE 5.2).
+    MCP Collapse and Flattening (MCP_COLLAPSE 5.2 / WCP 8.4.1).
     """
     name = normalize_identity(identity)
     target_path = "/" + subpath.strip("/")
@@ -209,13 +183,12 @@ def resolve_mcp(identity: str, subpath: str = ""):
         raise HTTPException(status_code=403, detail="Identity is protected.")
 
     all_records = resolve_cascade(name, seen=set())
-
-    # 1. Gather and Filter by Path
     mcp_records = records_by_type(all_records, "MCP")
-    if not mcp_records:
-        raise HTTPException(status_code=404, detail="No MCP records found.")
 
-    # 2. Match exact path, fallback to "/"
+    if not mcp_records:
+        raise HTTPException(status_code=404, detail="No machine-readable endpoints found.")
+
+    # 1. Path Awareness
     selected_record = next((r for r in mcp_records if r.get("path") == target_path), None)
     if not selected_record:
         selected_record = next((r for r in mcp_records if r.get("path", "/") == "/"), None)
@@ -223,25 +196,28 @@ def resolve_mcp(identity: str, subpath: str = ""):
     if not selected_record:
         raise HTTPException(status_code=404, detail=f"No endpoint found for path {target_path}")
 
-    # 3. Sort by priority
-    # Note: Using only path-filtered records for priority tie-breaking
+    # 2. Priority Sorting
     eligible_matches = [r for r in mcp_records if r.get("path", "/") == selected_record.get("path", "/")]
     eligible_matches.sort(key=lambda r: r.get("priority", 10))
     selected = eligible_matches[0]
 
-    # 4. Handle CAPS Filtering
+    # 3. Aggregated Capabilities (CAPS)
     caps_records = records_by_type(all_records, "CAPS")
     allowed_caps: Set[str] = set()
-    if caps_records:
-        for c in caps_records:
-            val = c.get("value")
-            if isinstance(val, list):
-                allowed_caps.update(str(v) for v in val)
+    for c in caps_records:
+        val = c.get("value")
+        if isinstance(val, list):
+            allowed_caps.update(str(v) for v in val)
+
+    # 4. MCP SPEC COMPLIANCE: Extract raw HTTPS URL string
+    # If value is an object (with version/features), extract just the 'endpoint' string.
+    raw_val = selected["value"]
+    endpoint_url = raw_val.get("endpoint") if isinstance(raw_val, dict) else raw_val
 
     response: Dict[str, Any] = {
         "identity": f"ai://{name}",
         "mode": "mcp",
-        "endpoint": selected["value"],
+        "endpoint": endpoint_url,  # Flattened to string per MCP Spec 2025-06-18
         "ttl": 3600,
         "source": "authoritative",
     }
@@ -267,16 +243,7 @@ def index() -> FileResponse:
     return _static_file(WWW_ROOT / "index.html")
 
 
-@app.get("/governance", include_in_schema=False)
-def governance() -> FileResponse:
-    return _static_file(WWW_ROOT / "governance.html")
-
-
-def main() -> None:
-    print("Witchborn Codex Server (Genesis)")
-
-
 if __name__ == "__main__":
     import uvicorn
-    # This block is required to prevent the service from exiting immediately!
+
     uvicorn.run(app, host="0.0.0.0", port=9000)
