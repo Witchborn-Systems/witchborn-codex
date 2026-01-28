@@ -1,0 +1,30 @@
+
+
+Run these in your terminal from the `client/` directory (make sure your `.venv` is active).
+
+### 1. Build the Lookup Tool (`ailookup.exe`)
+
+This builds the command-line tool for users and agents.
+
+```powershell
+pyinstaller --onefile --name ailookup --hidden-import=requests build_cxlookup.py
+
+```
+
+### 2. Build the Protocol Handler (`codex-handle.exe`)
+
+This builds the silent background program that handles `ai://` links.
+
+```powershell
+pyinstaller --noconsole --onefile --name codex-handle --hidden-import=requests build_handler.py
+
+```
+
+### 3. Install/Deploy
+
+Once those are built, run your master installer **as Administrator** to copy them to Program Files and set the Registry keys.
+
+```batch
+installers\install_witchborn.bat
+
+```

@@ -1,45 +1,56 @@
 import argparse
 import json
 import sys
-from .resolver import CodexResolver
+from codexai.resolver import CodexResolver
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Witchborn Codex Lookup")
-    parser.add_argument("uri", help="The URI (ai://acme)")
-    parser.add_argument("--server", "-s", help="Override Root Server")
-    parser.add_argument("--json", "-j", action="store_true")
+    parser = argparse.ArgumentParser(description="Witchborn Codex Lookup Tool")
+    parser.add_argument("uri", help="The ai:// identity to resolve")
+    parser.add_argument("--server", help="Override Root Authority URL", default=None)
+    parser.add_argument("--mcp", action="store_true", help="Request AGENT (MCP) configuration")
+    parser.add_argument("--raw", action="store_true", help="Show full authoritative zone file")
+
     args = parser.parse_args()
 
-    resolver = CodexResolver(root_url=args.server)
+    try:
+        resolver = CodexResolver(root=args.server)
 
-    if not args.json:
-        print(f";; <<>> cxlookup 1.0.0 <<>> {args.uri}")
-        print(f";; server: {resolver.root}")
+        # 1. RAW MODE (Admin View)
+        if args.raw:
+            print(f";; <<>> cxlookup 1.0.0 <<>> {args.uri} (RAW)")
+            data = resolver.get_full_context(args.uri)
+            print(json.dumps(data, indent=2))
+            return
 
-    result = resolver.resolve(args.uri)
+        # 2. RESOLVE (Standard vs MCP)
+        # We pass the flag directly to the resolver
+        result = resolver.resolve(args.uri, prefer_mcp=args.mcp)
 
-    if args.json:
-        print(json.dumps(result, indent=2))
-        return
+        # 3. DISPLAY
+        if "error" in result:
+            print(f";; STATUS: ResolutionFailed")
+            print(f";; REASON: {result['message']}")
+            sys.exit(1)
 
-    if result.get("error"):
-        print(f";; STATUS: {result['error']}")
-        print(f";; REASON: {result.get('message')}")
-    elif result.get("mode") == "mcp":
-        print(";; MODE: AGENT (MCP)")
-        print(json.dumps(result.get("config"), indent=2))
-    else:
-        print(";; MODE: HUMAN (APP)")
-        rec = result.get("selected_record")
-        if rec:
-            val = rec.get("value")
-            # Handle Polymorphic App Object
-            target = val if isinstance(val, str) else val.get("default", str(val))
-            print(f";; TARGET: {target}")
-            print(f";; TYPE:   {rec.get('type')}")
+        mode = result.get("mode", "UNKNOWN").upper()
+
+        if mode == "APP":
+            print(f";; <<>> cxlookup 1.0.0 <<>> {args.uri}")
+            print(f";; TYPE: HUMAN (APP)")
+            print(f";; ANSWER: {result['url']}")
+
+        elif mode == "MCP":
+            # If they asked for MCP, dump the JSON so it can be piped
+            print(json.dumps(result["config"], indent=2))
+
         else:
-            print(";; TARGET: (No match)")
+            print(f";; STATUS: {mode}")
+            print(f";; MSG: {result.get('message')}")
+
+    except Exception as e:
+        print(f"\n[!] ERROR: {str(e)}")
+        sys.exit(1)
 
 
 if __name__ == "__main__":

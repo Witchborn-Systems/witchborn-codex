@@ -1,41 +1,40 @@
 import sys
 import webbrowser
-import json
-from .resolver import CodexResolver
+import ctypes
+from codexai.resolver import CodexResolver
 
 
 def main():
-    if len(sys.argv) < 2: return
-    uri = sys.argv[1]
-
-    resolver = CodexResolver()
-
-    # 1. Resolve
-    result = resolver.resolve(uri)
-
-    if result.get("error"):
-        # If we can't find it, we just exit silently or print to stdout
-        # In a future version, we might pop a tkinter alert box
-        print(f"Error: {result['message']}")
+    # 1. Get the URI passed by Windows (e.g. "ai://acme@webai")
+    if len(sys.argv) > 1:
+        identity = sys.argv[1]
+    else:
+        # If user just double-clicks the EXE without a link
+        ctypes.windll.user32.MessageBoxW(0, "Please open an ai:// link instead.", "Witchborn Codex", 0)
         return
 
-    # 2. Act
-    if result.get("mode") == "app":
-        rec = result.get("selected_record")
-        if rec:
-            val = rec.get("value")
-            # Polymorphic Fallback: String > Default
-            url = val if isinstance(val, str) else val.get("default")
+    # 2. Resolve (Standard Human Lookup)
+    try:
+        resolver = CodexResolver()
+        # We do NOT prefer MCP here. Handlers are for Humans (Browsers).
+        result = resolver.resolve(identity, prefer_mcp=False)
 
-            if url and (url.startswith("http") or url.startswith("https")):
-                print(f"Opening: {url}")
-                webbrowser.open(url)
+        if result.get("mode") == "app":
+            # SUCCESS: Open the URL in Chrome/Edge/Default
+            target_url = result.get("url")
+            webbrowser.open(target_url)
 
-    elif result.get("mode") == "mcp":
-        # For now, just print config. Agents would consume this via API, not handler.
-        print("MCP Configuration Resolved.")
-        print(json.dumps(result.get("config"), indent=2))
-        input("Press Enter to close...")
+        elif result.get("mode") == "mcp":
+            # Edge case: If it's ONLY an agent, we can't "open" it.
+            ctypes.windll.user32.MessageBoxW(0, "This identity is for AI Agents only.", "Witchborn Codex", 0)
+
+        else:
+            # Error or Unknown
+            msg = result.get("message", "Unknown Error")
+            ctypes.windll.user32.MessageBoxW(0, f"Could not resolve identity:\n{msg}", "Resolution Failed", 0x10)
+
+    except Exception as e:
+        ctypes.windll.user32.MessageBoxW(0, f"Critical Error:\n{str(e)}", "Handler Crash", 0x10)
 
 
 if __name__ == "__main__":
