@@ -177,4 +177,105 @@ This repository is under active development. APIs, schemas, and tooling will sta
 ForgeBorn License v1.0.1
 Attribution required. No white-label resale.
 
+## Bonus command line output 
+```commandline
+D:\Dev\witchborn-codex\client\dist>cxlookup.exe acme@webai
+;; <<>> ailookup 1.0.0 <<>> acme@webai
+;; TYPE: HUMAN (APP)
+;; ANSWER: https://acme.example.com
 
+
+
+D:\Dev\witchborn-codex\client\dist>cxlookup.exe acme@webai
+;; <<>> ailookup 1.0.0 <<>> acme@webai
+;; TYPE: HUMAN (APP)
+;; ANSWER: https://acme.example.com
+
+D:\Dev\witchborn-codex\client\dist>cxlookup.exe acme@webai --mcp
+{
+  "endpoint": "https://acme.example.com/mcp",
+  "version": "1.0.0",
+  "features": [
+    "resources",
+    "tools",
+    "oauth"
+  ],
+  "capabilities": [
+    "search",
+    "summarize",
+    "login",
+    "userinfo"
+  ]
+}
+
+D:\Dev\witchborn-codex\client\dist>cxlookup.exe acme@webai --raw
+;; <<>> ailookup 1.0.0 <<>> acme@webai (RAW)
+{
+  "identity": "ai://acme",
+  "status": "LIVE",
+  "ttl": 3600,
+  "records": [
+    {
+      "type": "MCP",
+      "value": {
+        "endpoint": "https://acme.example.com/mcp",
+        "version": "1.0.0",
+        "features": [
+          "resources",
+          "tools",
+          "oauth"
+        ],
+        "capabilities": [
+          "search",
+          "summarize",
+          "login",
+          "userinfo"
+        ]
+      },
+      "priority": 0
+    },
+    {
+      "type": "MCP",
+      "value": {
+        "endpoint": "https://acme-b2b.example.com/mcp",
+        "version": "1.1.0",
+        "features": [
+          "tools",
+          "prompts"
+        ],
+        "capabilities": [
+          "transcribe",
+          "analyze"
+        ]
+      },
+      "priority": 5
+    },
+    {
+      "type": "CAPS",
+      "value": [
+        "search",
+        "summarize",
+        "login",
+        "userinfo",
+        "transcribe",
+        "analyze"
+      ]
+    },
+    {
+      "type": "KEY",
+      "value": "ed25519:ACME_PUBLIC_KEY_BASE64"
+    },
+    {
+      "type": "APP",
+      "value": "https://acme.example.com"
+    },
+    {
+      "type": "TXT",
+      "value": "ACME: Autonomous Compute & Model Entity"
+    }
+  ],
+  "created_at": "2026-01-25T00:00:00Z",
+  "contact": "mailto:admin@acme.example.com",
+  "info": "Official ACME AI identity zone. Defines DNS-style global identity and multi-endpoint service discovery."
+}
+```
