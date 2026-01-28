@@ -34,15 +34,17 @@ Each zone file MUST be a valid JSON object with the following fields:
 {
   "identity": "<identity>",
   "created_at": "<ISO-8601 UTC timestamp>",
+  "contact": "<required contact info (email, url, or handle)>",
   "info": "<free-form string, human/machine readable, optional>",
   "records": [ <record1>, <record2>, ... ]
 }
 ```
 
-* `identity`: the canonical, authority-free identity string
-* `created_at`: ISO-8601 UTC timestamp of registration
-* `info`: (optional) a free-form string for description, provenance, or onboarding; for UI/UX, never protocol logic
-* `records`: an array of records (see below)
+* `identity`: the canonical, authority-free identity string.
+* `created_at`: ISO-8601 UTC timestamp of registration.
+* `contact`: **(REQUIRED)** A valid contact method for the zone operator. May be an email (`mailto:`), a URL, or a verified handle. This ensures accountability for the zone.
+* `info`: (optional) a free-form string for description, provenance, or onboarding; for UI/UX, never protocol logic.
+* `records`: an array of records (see below).
 
 **Example:**
 
@@ -50,33 +52,18 @@ Each zone file MUST be a valid JSON object with the following fields:
 {
   "identity": "goodfellow",
   "created_at": "2026-01-25T00:00:00Z",
-  "info": "This zone defines the official Goodfellow AI identity. Multi-endpoint, DNS-style registry with real-time capability negotiation and provenance.",
+  "contact": "mailto:admin@goodfellow.ai",
+  "info": "This zone defines the official Goodfellow AI identity.",
   "records": [
     {
       "type": "MCP",
       "value": {
-        "endpoint": "https://goodfellow.ai/mcp",
+        "endpoint": "[https://goodfellow.ai/mcp](https://goodfellow.ai/mcp)",
         "version": "1.0.0",
         "features": ["resources", "tools"],
         "capabilities": ["search", "summarize"]
       },
       "priority": 0
-    },
-    {
-      "type": "CAPS",
-      "value": ["search", "summarize"]
-    },
-    {
-      "type": "KEY",
-      "value": "ed25519:GOODFELLOW_PUBLIC_KEY_BASE64"
-    },
-    {
-      "type": "APP",
-      "value": "https://goodfellow.ai"
-    },
-    {
-      "type": "TXT",
-      "value": "Goodfellow: Autonomous Registry Entry"
     }
   ]
 }
@@ -160,11 +147,12 @@ zones/root.json
 {
   "identity": "root",
   "created_at": "2026-01-25T00:00:00Z",
+  "contact": "mailto:governance@witchbornsystems.ai",
   "info": "Root authority and governance for Witchborn Codex. Registry public key, legal provenance, and canonical cxbind endpoint(s).",
   "records": [
     {
       "type": "BIND",
-      "value": "https://cxbind.witchbornsystems.ai"
+      "value": "[https://cxbind.witchbornsystems.ai](https://cxbind.witchbornsystems.ai)"
     },
     {
       "type": "TXT",
@@ -176,7 +164,7 @@ zones/root.json
     },
     {
       "type": "APP",
-      "value": "https://witchbornsystems.ai/governance"
+      "value": "[https://witchbornsystems.ai/governance](https://witchbornsystems.ai/governance)"
     }
   ]
 }
@@ -209,8 +197,6 @@ zones/
   goodfellow.json
   sentinel.json
   root.json
-  openai.json
-  meta.json
 ```
 
 ## 10. Meta/Administrative Data (optional)
