@@ -72,98 +72,6 @@ The Discovery Authority supports "Smart Push" deep linking for human browsers:
 
 ---
 
-## Getting Started / INSTALLING FROM REPO
-
-
-This guide covers the **Extension** (for your browser), the **Handler** (for desktop integration), and the **CLI Tool** (for terminal lookups).
-
-### **1. Get the Files**
-
-Download the **WitchbornCodex_Win_v1.0.zip** (or the repository source zip) from the [Official Release Page](https://github.com/Witchborn-Systems/witchborn-codex/releases/tag/v1.0-release).
-
----
-
-### **2. Browser Setup (AI:// Links Extension)**
-
-The extension allows your browser to detect and route `ai://` and `mcp://` links.
-
-1. Open Chrome, Edge, or Brave and go to **`chrome://extensions`**.
-2. Enable **"Developer mode"** in the top-right corner.
-3. Click **"Load unpacked"**.
-4. Select the **`chrome_ext`** folder from your extracted download.
-5. **Status:** The "AI:// Links" extension is now active in your toolbar.
-
----
-
-### **3. Desktop Integration (The Protocol Handler)**
-
-The **Handler** (`codex-handle`) is a background program that allows your operating system to open `ai://` links directly into your browser or agents.
-
-#### **Windows**
-
-1. Open the `release/WitchbornCodex_Win_v1.0` folder.
-2. Right-click **`install_witchborn.bat`** and select **"Run as Administrator"**.
-3. **What this does:**
-* Creates an installation folder in `C:\Program Files\WitchbornCodex`.
-* Registers the `ai://` and `mcp://` protocols in the Windows Registry.
-* Adds the tools to your System PATH.
-
-
-
-#### **macOS**
-
-1. Open **Terminal**.
-2. Navigate to the `installers/` directory.
-3. Run: `chmod +x osx.sh && ./osx.sh`
-4. **What this does:** Creates a macOS App Bundle (`WitchbornCodex.app`) to handle the protocols via `Info.plist` registration.
-
-#### **Linux**
-
-1. Open **Terminal**.
-2. Navigate to the `installers/` directory.
-3. Run: `chmod +x linux.sh && ./linux.sh`
-4. **What this does:** Creates a `.desktop` entry and registers the `x-scheme-handler` for `ai` and `mcp` protocols.
-
----
-
-### **4. Command Line Tools (ailookup / cxlookup)**
-
-The **CLI Tool** allows you to resolve identities directly from your terminal or scripts.
-
-* **Windows:** Once the installer is finished, you can simply type `ailookup` in any Command Prompt or PowerShell window.
-* **Linux/Mac:** The `cxlookup` tool is installed via the installation scripts.
-
-**Example Command:**
-
-```bash
-ailookup ai://acme@webai
-
-```
-
-*This will return the full record set or the machine-ready MCP endpoint for that identity.*
-
----
-
-### **5. Verification (How to Test)**
-
-To ensure everything is working correctly:
-
-1. **Browser Test:** Type `ai://root` in your browser address bar and hit Enter. It should resolve to the Witchborn Governance page.
-2. **Terminal Test:** Type `ailookup ai://acme` to see the demo ACME identity zone file.
-
----
-
-### **For Developers: Self-Hosting**
-
-If you want to host your own node or registrar:
-
-* The **Registrar API** code is located in the `server/` directory.
-* Run the server using `main.py` (Default port 9000).
-* Manage your identity zones by adding `.json` files to the `server/zones/` directory.
-
----
-
-
 
 ### Directory Layout
 
@@ -267,3 +175,5 @@ This repository is under active development. APIs, schemas, and tooling will sta
 
 ForgeBorn License v1.0.1
 Attribution required. No white-label resale.
+
+
