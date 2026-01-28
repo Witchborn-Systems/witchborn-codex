@@ -1,0 +1,24 @@
+{
+  "identity": "root",
+  "created_at": "2026-01-25T00:00:00Z",
+  "info": "Root authority and governance for Witchborn Codex. Registry public key, legal provenance, and canonical cxbind endpoint(s).",
+  "contact": "mailto:governance@witchbornsystems.ai",
+  "records": [
+    {
+      "type": "BIND",
+      "value": "https://cxbind.witchbornsystems.ai"
+    },
+    {
+      "type": "TXT",
+      "value": "Witchborn Codex Root Authority (WCP v1.1.0)"
+    },
+    {
+      "type": "KEY",
+      "value": "ed25519:BASE64_ROOT_PUBLIC_KEY"
+    },
+    {
+      "type": "APP",
+      "value": "https://witchbornsystems.ai/governance"
+    }
+  ]
+}
