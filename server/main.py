@@ -17,7 +17,7 @@ WWW_ROOT = APP_ROOT / "www"
 
 app = FastAPI(
     title="Witchborn Codex API (Registrar)",
-    version="1.1.1-genesis",
+    version="1.1.3-noschema",
     description=(
         "Public, nonprofit reference implementation of the Witchborn Codex.\n\n"
         "This service provides authoritative identity resolution for "
@@ -96,8 +96,13 @@ def zone_path(identity: str) -> str:
 def load_zone(identity: str) -> Dict[str, Any] | None:
     path = zone_path(identity)
     if os.path.exists(path):
-        with open(path, "r", encoding="utf-8") as f:
-            return json.load(f)
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except json.JSONDecodeError:
+            # CORRUPTION PROTECTION: Log it but don't crash the server
+            print(f"ERROR: Corrupted zone file for {identity}")
+            return None
     return None
 
 
@@ -146,6 +151,7 @@ def health():
 def resolve(identity: str = Query(..., description="ai:// identity to resolve")):
     name = normalize_identity(identity)
 
+    # 1. Protective Holds
     if name in GENESIS_PROTECTED:
         owner = GENESIS_PROTECTED[name]
         return JSONResponse(
@@ -159,13 +165,22 @@ def resolve(identity: str = Query(..., description="ai:// identity to resolve"))
 
     zone = load_zone(name)
     if zone:
-        return {
+        # 2. START WITH FROZEN SPEC: Guarantee core keys exist
+        response = {
             "identity": f"ai://{name}",
             "status": "LIVE",
             "ttl": 3600,
-            "records": zone["records"],
-            "created_at": zone["created_at"],
+            "records": zone.get("records", []),
+            "created_at": zone.get("created_at", datetime.utcnow().isoformat()),
         }
+
+        # 3. NOSCHEMA SPREAD: Transparently pass through all extra metadata
+        # This picks up expires_at, is_donated, source, or anything else in the JSON.
+        for key, value in zone.items():
+            if key not in response:
+                response[key] = value
+
+        return response
 
     raise HTTPException(status_code=404, detail="Identity not forged.")
 
@@ -210,14 +225,13 @@ def resolve_mcp(identity: str, subpath: str = ""):
             allowed_caps.update(str(v) for v in val)
 
     # 4. MCP SPEC COMPLIANCE: Extract raw HTTPS URL string
-    # If value is an object (with version/features), extract just the 'endpoint' string.
     raw_val = selected["value"]
     endpoint_url = raw_val.get("endpoint") if isinstance(raw_val, dict) else raw_val
 
     response: Dict[str, Any] = {
         "identity": f"ai://{name}",
         "mode": "mcp",
-        "endpoint": endpoint_url,  # Flattened to string per MCP Spec 2025-06-18
+        "endpoint": endpoint_url,
         "ttl": 3600,
         "source": "authoritative",
     }
@@ -245,5 +259,5 @@ def index() -> FileResponse:
 
 if __name__ == "__main__":
     import uvicorn
-
+    # Operates on port 9000 per infrastructure spec
     uvicorn.run(app, host="0.0.0.0", port=9000)
