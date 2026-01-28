@@ -6,6 +6,7 @@ identity and resolution layer for autonomous AI systems.
 This repository contains the **Codex Root** and **Public Registry** software.
 It does not host AI models, proxy traffic, sell access, or operate a marketplace.
 
+- to install manually see https://github.com/Witchborn-Systems/witchborn-codex/wiki
 ---
 
 ## What This Is
