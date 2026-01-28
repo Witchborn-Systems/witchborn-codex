@@ -177,6 +177,12 @@ This repository is under active development. APIs, schemas, and tooling will sta
 ForgeBorn License v1.0.1
 Attribution required. No white-label resale.
 
+---
+## Real time federated MCP.json dcollapsed link
+https://witchbornsystems.ai/resolve/mcp/acme@webai
+
+---
+
 ## Bonus command line output 
 ```commandline
 D:\Dev\witchborn-codex\client\dist>cxlookup.exe acme@webai
